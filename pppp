@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+'''
+The Poor Person's Python Profiler. Probably a bad idea.
+'''
+
+import argparse
+import collections
+import re
+import subprocess
+import time
+
+def main():
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('-x', '--pid')
+    argparser.add_argument('-t', '--time', default=30, type=int)
+    args = argparser.parse_args()
+    stacks = collections.defaultdict(int)
+
+    start = time.time()
+    while time.time() < start + args.time:
+        sp = subprocess.Popen('gdb '
+                              '--eval-command="set pagination 0" '
+                              '--eval-command=bt '
+                              '--batch '
+                              '-p {}'.format(str(args.pid)),
+                              shell=True,
+                              stdout=subprocess.PIPE)
+        stdout, stderr = sp.communicate()
+        frames = []
+        frame_regex = r'#[0-9]+\s'
+        pyframe_regex = r'PyEval_EvalFrameEx \(f=Frame 0x[0-9a-f]+, ' \
+            'for file (\S+), line [0-9]+, in (\S+)'
+        for line in stdout.split('\n'):
+            if re.match(frame_regex, line):
+                m = re.search(pyframe_regex, line)
+                if m:
+                    pyframe = '{}({})'.format(m.group(2), m.group(1))
+                    frames.append(pyframe)
+                else:
+                    frames.append(line.split()[3])
+
+        stack = ';'.join(reversed(frames))
+        stacks[stack] += 1
+
+    for k, v in sorted(stacks.items(), key=lambda (k, v): v):
+        print k, v
+
+
+if __name__ == '__main__':
+    main()

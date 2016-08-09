@@ -1,0 +1,23 @@
+
+- Using SystemTap - C profiling
+- Do we really need a debug binary?
+- What about JITted runtimes?
+- Desired case study: capture perf issue that's visible with C-level insight
+- Measuring overhead
+- How hard is it to trace every function call? (e.g. for flame charts)
+- Can we change the interpreter to make this easier (e.g., dtrace patches)
+
+- Can we use eBPF?
+
+- Tracing memory
+
+- Tracing network or other I/O
+
+- Compared to gdb/strace: how does overhead compare? What about permissions?
+
+
+I ran `objcopy /path/to/python/binary --globalize-symbols=gil_last_holder` in
+order to get a python traceback when the gil is released -- is this actually
+necessary? or do we just need to call
+    addr = &@var("gil_last_holder@Python/ceval.c", @PYTHON_LIBRARY);
+in the stap script?
